@@ -17,7 +17,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-              
+  
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
   try {

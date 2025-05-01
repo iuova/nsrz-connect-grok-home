@@ -54,7 +54,11 @@ function Admin() {
   const fetchNews = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/news', { headers: getAuthHeaders() });
-      setNews(res.data.sort((a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      const sortedNews = res.data.sort(
+        (a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setNews(sortedNews);
+      console.log('Fetched news:', sortedNews); // Для отладки
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
@@ -73,10 +77,12 @@ function Admin() {
 
     // Фильтр по дате
     if (startDate) {
-      result = result.filter((item) => new Date(item.created_at) >= new Date(startDate));
+      const start = new Date(startDate);
+      result = result.filter((item) => new Date(item.created_at) >= start);
     }
     if (endDate) {
-      result = result.filter((item) => new Date(item.created_at) <= new Date(endDate));
+      const end = new Date(endDate);
+      result = result.filter((item) => new Date(item.created_at) <= end);
     }
 
     // Фильтр по автору
@@ -86,9 +92,11 @@ function Admin() {
 
     // Фильтр по статусу
     if (statusFilter !== 'all') {
-      result = result.filter((item) => item.published === (statusFilter === 'published'));
+      const isPublished = statusFilter === 'published';
+      result = result.filter((item) => item.published === isPublished);
     }
 
+    console.log('Filtered news:', result); // Для отладки
     return showAll ? result : result.slice(0, 5);
   }, [news, search, startDate, endDate, authorFilter, statusFilter, showAll]);
 
@@ -163,38 +171,102 @@ function Admin() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
           Управление новостями
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+          <Button
+            variant="contained"
+            onClick={() => setOpenAddDialog(true)}
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Добавить новость
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handlePublishMultiple}
+            disabled={selectedNews.length === 0}
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Опубликовать выбранные
+          </Button>
           <TextField
-            label="Поиск по новостям"
+            placeholder="Поиск по новостям"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ minWidth: 200 }}
+            size="small"
+            sx={{
+              width: 200,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
           />
+          {filteredNews.length > 5 && !showAll && (
+            <Button
+              variant="text"
+              onClick={() => setShowAll(true)}
+              sx={{ color: '#007aff', textTransform: 'none' }}
+            >
+              Показать все
+            </Button>
+          )}
+          {showAll && (
+            <Button
+              variant="text"
+              onClick={() => setShowAll(false)}
+              sx={{ color: '#007aff', textTransform: 'none' }}
+            >
+              Скрыть
+            </Button>
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
           <TextField
             label="Дата от"
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            size="small"
             InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 150 }}
+            sx={{
+              width: 150,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
           />
           <TextField
             label="Дата до"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            size="small"
             InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 150 }}
+            sx={{
+              width: 150,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
           />
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Автор</InputLabel>
+          <FormControl sx={{ width: 150 }}>
+            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Автор</InputLabel>
             <Select
               value={authorFilter}
               onChange={(e) => setAuthorFilter(e.target.value)}
-              label="Автор"
+              size="small"
+              sx={{
+                borderRadius: 2,
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+              }}
             >
               <MenuItem value="">Все</MenuItem>
               {authors.map((author) => (
@@ -204,12 +276,17 @@ function Admin() {
               ))}
             </Select>
           </FormControl>
-          <FormControl sx={{ minWidth: 150 }}>
-            <InputLabel>Статус</InputLabel>
+          <FormControl sx={{ width: 150 }}>
+            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Статус</InputLabel>
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              label="Статус"
+              size="small"
+              sx={{
+                borderRadius: 2,
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+              }}
             >
               <MenuItem value="all">Все</MenuItem>
               <MenuItem value="published">Опубликована</MenuItem>
@@ -217,42 +294,7 @@ function Admin() {
             </Select>
           </FormControl>
         </Box>
-        <Box sx={{ mb: 3 }}>
-          <Button
-            variant="contained"
-            onClick={() => setOpenAddDialog(true)}
-            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
-          >
-            Добавить новость
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handlePublishMultiple}
-            disabled={selectedNews.length === 0}
-            sx={{ ml: 2, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
-          >
-            Опубликовать выбранные
-          </Button>
-          {!showAll && filteredNews.length > 5 && (
-            <Button
-              variant="text"
-              onClick={() => setShowAll(true)}
-              sx={{ ml: 2, color: '#007aff' }}
-            >
-              Показать все
-            </Button>
-          )}
-          {showAll && (
-            <Button
-              variant="text"
-              onClick={() => setShowAll(false)}
-              sx={{ ml: 2, color: '#007aff' }}
-            >
-              Скрыть
-            </Button>
-          )}
-        </Box>
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -296,13 +338,13 @@ function Admin() {
                       }}
                       sx={{ color: '#007aff' }}
                     >
-                      <EditIcon />
+                      <EditIcon fontSize="small" />
                     </IconButton>
                     <IconButton
                       onClick={() => handleDeleteNews(item.id)}
                       sx={{ color: '#ff3b30' }}
                     >
-                      <DeleteIcon />
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -318,28 +360,53 @@ function Admin() {
             <TextField
               label="Заголовок"
               fullWidth
+              variant="outlined"
               value={newNews.title}
               onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover fieldset': { borderColor: '#007aff' },
+                  '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                },
+              }}
             />
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                label="Содержимое"
-                fullWidth
-                multiline
-                rows={4}
-                value={newNews.content}
-                onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
+            <TextField
+              label="Содержимое"
+              fullWidth
+              variant="outlined"
+              multiline
+              rows={4}
+              value={newNews.content}
+              onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover fieldset': { borderColor: '#007aff' },
+                  '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                },
+              }}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Checkbox
+                checked={newNews.published}
+                onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
               />
+              <Typography variant="body2">Опубликовать сразу</Typography>
             </Box>
-            <Checkbox
-              checked={newNews.published}
-              onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
-            />
-            <Typography variant="caption">Опубликовать сразу</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenAddDialog(false)}>Отмена</Button>
-            <Button onClick={handleAddNews} variant="contained">
+            <Button
+              onClick={() => setOpenAddDialog(false)}
+              sx={{ color: '#007aff', textTransform: 'none' }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleAddNews}
+              variant="contained"
+              sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+            >
               Добавить
             </Button>
           </DialogActions>
@@ -354,30 +421,54 @@ function Admin() {
                 <TextField
                   label="Заголовок"
                   fullWidth
+                  variant="outlined"
                   value={editNews.title}
                   onChange={(e) => setEditNews({ ...editNews, title: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&:hover fieldset': { borderColor: '#007aff' },
+                      '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                    },
+                  }}
                 />
-                <Box sx={{ mb: 2 }}>
-                  <TextField
-                    label="Содержимое"
-                    fullWidth
-                    multiline
-                    rows={4}
-                    value={editNews.content}
-                    onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
+                <TextField
+                  label="Содержимое"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={editNews.content}
+                  onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&:hover fieldset': { borderColor: '#007aff' },
+                      '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                    },
+                  }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                  <Checkbox
+                    checked={editNews.published}
+                    onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}
                   />
+                  <Typography variant="body2">Опубликовать</Typography>
                 </Box>
-                <Checkbox
-                  checked={editNews.published}
-                  onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}
-                />
-                <Typography variant="caption">Опубликовать</Typography>
               </>
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenEditDialog(false)}>Отмена</Button>
-            <Button onClick={handleUpdateNews} variant="contained">
+            <Button
+              onClick={() => setOpenEditDialog(false)}
+              sx={{ color: '#007aff', textTransform: 'none' }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleUpdateNews}
+              variant="contained"
+              sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+            >
               Сохранить
             </Button>
           </DialogActions>

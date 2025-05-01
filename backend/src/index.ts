@@ -6,6 +6,7 @@ import newsRoutes from './routes/newsRoutes';
 import departmentRoutes from './routes/departmentRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import vacationRoutes from './routes/vacationRoutes';
+import exportRoutes from './routes/exportRoutes';
               
 dotenv.config();
               
@@ -23,6 +24,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/vacations', vacationRoutes);
+app.use('/api/export', exportRoutes);
               
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

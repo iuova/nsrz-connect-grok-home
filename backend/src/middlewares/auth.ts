@@ -1,29 +1,34 @@
-import { Request, Response, NextFunction } from "express";
-import { findUserById } from "../models/user";
-import { verifyToken } from "../utils/jwt"; // Предполагается, что verifyToken существует
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import jwt from 'jsonwebtoken';
+import { findUserById } from '../models/user';
 
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+export const authenticate: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    res.status(401).json({ error: 'Токен не предоставлен' });
+    return;
+  }
+
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const decoded = verifyToken(token);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number; role: string };
     const user = await findUserById(decoded.id);
     if (!user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: 'Пользователь не найден' });
+      return;
     }
-
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: 'Недействительный токен' });
   }
 };
 
-// Если есть другой обработчик с аналогичной проблемой:
-export const someOtherMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // ... логика ...
-  next();
+export const authorize = (roles: string[]): RequestHandler => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({ error: 'Доступ запрещён' });
+      return;
+    }
+    next();
+  };
 };

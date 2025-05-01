@@ -96,7 +96,7 @@ function Admin() {
       result = result.filter((item) => item.published === isPublished);
     }
 
-    console.log('Filtered news:', result); // Для отладки
+    console.log('Filtered news length:', result.length); // Для отладки
     return showAll ? result : result.slice(0, 5);
   }, [news, search, startDate, endDate, authorFilter, statusFilter, showAll]);
 
@@ -190,13 +190,16 @@ function Admin() {
           >
             Опубликовать выбранные
           </Button>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <TextField
             placeholder="Поиск по новостям"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
             sx={{
-              width: 200,
+              flexGrow: 1,
+              maxWidth: '100%',
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
                 '&:hover fieldset': { borderColor: '#007aff' },
@@ -208,7 +211,7 @@ function Admin() {
             <Button
               variant="text"
               onClick={() => setShowAll(true)}
-              sx={{ color: '#007aff', textTransform: 'none' }}
+              sx={{ color: '#007aff', textTransform: 'none', ml: 2 }}
             >
               Показать все
             </Button>
@@ -217,7 +220,7 @@ function Admin() {
             <Button
               variant="text"
               onClick={() => setShowAll(false)}
-              sx={{ color: '#007aff', textTransform: 'none' }}
+              sx={{ color: '#007aff', textTransform: 'none', ml: 2 }}
             >
               Скрыть
             </Button>
@@ -257,7 +260,11 @@ function Admin() {
             }}
           />
           <FormControl sx={{ width: 150 }}>
-            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Автор</InputLabel>
+            <InputLabel
+              sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}
+            >
+              Автор
+            </InputLabel>
             <Select
               value={authorFilter}
               onChange={(e) => setAuthorFilter(e.target.value)}
@@ -277,7 +284,11 @@ function Admin() {
             </Select>
           </FormControl>
           <FormControl sx={{ width: 150 }}>
-            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Статус</InputLabel>
+            <InputLabel
+              sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}
+            >
+              Статус
+            </InputLabel>
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -360,10 +371,10 @@ function Admin() {
             <TextField
               label="Заголовок"
               fullWidth
-              variant="outlined"
               value={newNews.title}
               onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
               sx={{
+                mt: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                   '&:hover fieldset': { borderColor: '#007aff' },
@@ -374,12 +385,12 @@ function Admin() {
             <TextField
               label="Содержимое"
               fullWidth
-              variant="outlined"
               multiline
               rows={4}
               value={newNews.content}
               onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
               sx={{
+                mt: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                   '&:hover fieldset': { borderColor: '#007aff' },
@@ -387,7 +398,7 @@ function Admin() {
                 },
               }}
             />
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
               <Checkbox
                 checked={newNews.published}
                 onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
@@ -421,10 +432,10 @@ function Admin() {
                 <TextField
                   label="Заголовок"
                   fullWidth
-                  variant="outlined"
                   value={editNews.title}
                   onChange={(e) => setEditNews({ ...editNews, title: e.target.value })}
                   sx={{
+                    mt: 2,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover fieldset': { borderColor: '#007aff' },
@@ -440,6 +451,7 @@ function Admin() {
                   value={editNews.content}
                   onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
                   sx={{
+                    mt: 2,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover fieldset': { borderColor: '#007aff' },
@@ -447,7 +459,7 @@ function Admin() {
                     },
                   }}
                 />
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
                   <Checkbox
                     checked={editNews.published}
                     onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}

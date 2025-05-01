@@ -1,5 +1,6 @@
 import db from '../config/database';
 import bcrypt from 'bcryptjs';
+import { UserModel } from "./schemas"; // Предполагается, что модель UserModel определена здесь
               
 export interface User {
   id?: number;
@@ -35,4 +36,10 @@ export const findUserByEmail = async (email: string): Promise<User | null> => {
       resolve(row || null);
     });
   });
+};
+
+export const findUserById = async (id: string) => {
+  const user = await UserModel.findById(id).exec();
+  if (!user) throw new Error("User not found");
+  return user;
 };

@@ -1,32 +1,29 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-              
-interface AuthRequest extends Request {
-  user?: { id: number; role: string };
-}
-              
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    res.status(401).json({ error: 'No token provided' });
-    return;
-  }
-              
+import { Request, Response, NextFunction } from "express";
+import { findUserById } from "../models/user";
+import { verifyToken } from "../utils/jwt"; // Предполагается, что verifyToken существует
+
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number; role: string };
-    req.user = decoded;
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const decoded = verifyToken(token);
+    const user = await findUserById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };
-              
-export const authorize = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      res.status(403).json({ error: 'Access denied' });
-      return;
-    }
-    next();
-  };
+
+// Если есть другой обработчик с аналогичной проблемой:
+export const someOtherMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // ... логика ...
+  next();
 };

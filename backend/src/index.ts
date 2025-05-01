@@ -7,6 +7,7 @@ import departmentRoutes from './routes/departmentRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import vacationRoutes from './routes/vacationRoutes';
 import exportRoutes from './routes/exportRoutes';
+import './types/express';
               
 dotenv.config();
               

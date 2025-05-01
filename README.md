@@ -1,19 +1,30 @@
-# NSRZ Connect
-Corporate portal for Nakhodka Shiprepair Yard (NSRZ).
+# НСРЗ Коннект
+Корпоративный портал для Находкинского судоремонтного завода (НСРЗ).
 
-## Setup
-- **Backend**: `cd backend && yarn install && yarn dev`
-- **Frontend**: `cd frontend && yarn install && yarn dev`
+## Возможности
+- **Лента новостей**: Просмотр и управление корпоративными новостями (для ролей admin/news_manager).
+- **Организационная структура**: Древовидное отображение подразделений с списками сотрудников.
+- **Справочник телефонов**: Контактные данные сотрудников с экспортом в Excel.
+- **Информация об отпусках**: Детали отпусков сотрудников.
+- **Админ-панель**: Управление пользователями и настройка сервера электронной почты (для admin).
+- **Аутентификация**: Вход по email и паролю с использованием JWT.
 
-## Stack
-- Backend: Node.js, Express, SQLite, TypeScript
-- Frontend: React, TypeScript, Material-UI
-- Database: SQLite
+## Технологический стек
+- **Бэкенд**: Node.js, Express, SQLite, TypeScript
+- **Фронтенд**: React, TypeScript, Material-UI, Vite
+- **База данных**: SQLite
 
-## Features
-- News feed
-- Organizational structure
-- Employee phone directory
-- Vacation information
-- Email integration
-- Admin panel
+## Дизайн
+Минималистичный интерфейс в стиле продуктов Apple: светлые спокойные тона, мягкие тени, плавные переходы. Все элементы интерфейса на русском языке.
+
+## Установка
+### Требования
+- Node.js v20.x
+- Yarn
+- macOS 10.15.7 или совместимая система
+
+### Инструкции
+1. Клонируйте репозиторий:
+   ```bash
+   git clone <repository-url>
+   cd nsrz-connect

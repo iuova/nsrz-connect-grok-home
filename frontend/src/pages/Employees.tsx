@@ -12,11 +12,16 @@ import {
   Button,
   TableContainer,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { Employee } from '../types';
 
 function Employees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     axios.get('http://localhost:5000/api/employees').then((res) => setEmployees(res.data));
@@ -29,7 +34,7 @@ function Employees() {
         const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'employees.xlsx');
+        link.setAttribute('download', 'справочник_сотрудников.xlsx');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -41,29 +46,46 @@ function Employees() {
       });
   };
 
+  const handleRowClick = (employee: Employee) => {
+    setSelectedEmployee(employee);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedEmployee(null);
+  };
+
   return (
-    <Container>
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h4" gutterBottom>
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
           Справочник телефонов
         </Typography>
-        <Button variant="contained" onClick={handleExport} sx={{ mb: 2 }}>
-          Экспорт в Excel
+        <Button
+          variant="contained"
+          onClick={handleExport}
+          sx={{ mb: 3, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
+        >
+          Экспортировать в Excel
         </Button>
-        <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
+        <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ФИО</TableCell>
-                <TableCell>Должность</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Телефон</TableCell>
-                <TableCell>Статус</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>ФИО</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Должность</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Телефон</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Статус</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {employees.map((emp) => (
-                <TableRow key={emp.id} hover>
+                <TableRow
+                  key={emp.id}
+                  hover
+                  onClick={() => handleRowClick(emp)}
+                  sx={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                >
                   <TableCell>{emp.full_name}</TableCell>
                   <TableCell>{emp.position}</TableCell>
                   <TableCell>{emp.email}</TableCell>
@@ -74,6 +96,35 @@ function Employees() {
             </TableBody>
           </Table>
         </TableContainer>
+        <Dialog open={!!selectedEmployee} onClose={handleCloseDialog}>
+          <DialogTitle>Карточка сотрудника</DialogTitle>
+          <DialogContent>
+            {selectedEmployee && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="body1">
+                  <strong>ФИО:</strong> {selectedEmployee.full_name}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Должность:</strong> {selectedEmployee.position}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Email:</strong> {selectedEmployee.email}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Телефон:</strong> {selectedEmployee.phone}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Статус:</strong> {selectedEmployee.status === 'active' ? 'Активен' : 'В отпуске'}
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} variant="outlined">
+              Закрыть
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Container>
   );

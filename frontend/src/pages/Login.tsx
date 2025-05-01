@@ -1,21 +1,19 @@
 import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import { Box, TextField, Button, Typography, Container, Paper } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/');
-    } catch (error) {
-      alert('Ошибка входа');
+    } catch (err: any) {
+      setError(err.message || 'Ошибка входа');
     }
   };
 
@@ -23,17 +21,21 @@ function Login() {
     <Container maxWidth="sm">
       <Box sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
         <Paper sx={{ p: 4, width: '100%', maxWidth: 400, borderRadius: 3 }}>
-          <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 600 }}>
-            НСРЗ Коннект
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, textAlign: 'center' }}>
+            Вход в НСРЗ Коннект
           </Typography>
+          {error && (
+            <Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>
+              {error}
+            </Typography>
+          )}
           <form onSubmit={handleSubmit}>
             <TextField
-              label="Электронная почта"
+              label="Email"
               fullWidth
               margin="normal"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              variant="outlined"
             />
             <TextField
               label="Пароль"
@@ -42,13 +44,12 @@ function Login() {
               margin="normal"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              variant="outlined"
             />
             <Button
               type="submit"
               variant="contained"
               fullWidth
-              sx={{ mt: 2, py: 1.5, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
+              sx={{ mt: 2, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
             >
               Войти
             </Button>

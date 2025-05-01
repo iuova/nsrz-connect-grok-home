@@ -12,11 +12,13 @@
     "backend": "cd backend && yarn dev"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/sqlite3": "^3.1.11",
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "docx": "^9.4.1",
     "xlsx": "^0.18.5"
   }

@@ -41,12 +41,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      console.log('Login response:', Response.error);
       setUser(res.data.user);
       navigate('/');
-    } catch (error) {
-      console.error('Login error:', Response.error);
-      throw new Error('Ошибка входа');
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Ошибка входа');
     }
   };
 

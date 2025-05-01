@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import {
   Container,
@@ -18,7 +18,14 @@ import {
   Checkbox,
   TableContainer,
   Paper,
+  IconButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { News } from '../types';
 
 function Admin() {
@@ -28,6 +35,12 @@ function Admin() {
   const [selectedNews, setSelectedNews] = useState<number[]>([]);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchNews();
@@ -41,11 +54,48 @@ function Admin() {
   const fetchNews = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/news', { headers: getAuthHeaders() });
-      setNews(res.data);
+      setNews(res.data.sort((a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
   };
+
+  const filteredNews = useMemo(() => {
+    let result = news;
+
+    // Поиск по заголовку и содержимому
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      result = result.filter(
+        (item) => item.title.toLowerCase().includes(lowerSearch) || item.content.toLowerCase().includes(lowerSearch)
+      );
+    }
+
+    // Фильтр по дате
+    if (startDate) {
+      result = result.filter((item) => new Date(item.created_at) >= new Date(startDate));
+    }
+    if (endDate) {
+      result = result.filter((item) => new Date(item.created_at) <= new Date(endDate));
+    }
+
+    // Фильтр по автору
+    if (authorFilter) {
+      result = result.filter((item) => item.author_email === authorFilter);
+    }
+
+    // Фильтр по статусу
+    if (statusFilter !== 'all') {
+      result = result.filter((item) => item.published === (statusFilter === 'published'));
+    }
+
+    return showAll ? result : result.slice(0, 5);
+  }, [news, search, startDate, endDate, authorFilter, statusFilter, showAll]);
+
+  const authors = useMemo(() => {
+    const uniqueAuthors = Array.from(new Set(news.map((item) => item.author_email)));
+    return uniqueAuthors.sort();
+  }, [news]);
 
   const handleAddNews = async () => {
     try {
@@ -114,33 +164,106 @@ function Admin() {
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-          Администрирование
+          Управление новостями
         </Typography>
-        <Button
-          variant="contained"
-          onClick={() => setOpenAddDialog(true)}
-          sx={{ mb: 3, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
-        >
-          Добавить новость
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handlePublishMultiple}
-          disabled={selectedNews.length === 0}
-          sx={{ mb: 3, ml: 2, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
-        >
-          Опубликовать выбранные
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <TextField
+            label="Поиск по новостям"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            label="Дата от"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+          <TextField
+            label="Дата до"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 150 }}
+          />
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Автор</InputLabel>
+            <Select
+              value={authorFilter}
+              onChange={(e) => setAuthorFilter(e.target.value)}
+              label="Автор"
+            >
+              <MenuItem value="">Все</MenuItem>
+              {authors.map((author) => (
+                <MenuItem key={author} value={author}>
+                  {author}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 150 }}>
+            <InputLabel>Статус</InputLabel>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              label="Статус"
+            >
+              <MenuItem value="all">Все</MenuItem>
+              <MenuItem value="published">Опубликована</MenuItem>
+              <MenuItem value="draft">Черновик</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ mb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => setOpenAddDialog(true)}
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
+          >
+            Добавить новость
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handlePublishMultiple}
+            disabled={selectedNews.length === 0}
+            sx={{ ml: 2, bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' } }}
+          >
+            Опубликовать выбранные
+          </Button>
+          {!showAll && filteredNews.length > 5 && (
+            <Button
+              variant="text"
+              onClick={() => setShowAll(true)}
+              sx={{ ml: 2, color: '#007aff' }}
+            >
+              Показать все
+            </Button>
+          )}
+          {showAll && (
+            <Button
+              variant="text"
+              onClick={() => setShowAll(false)}
+              sx={{ ml: 2, color: '#007aff' }}
+            >
+              Скрыть
+            </Button>
+          )}
+        </Box>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedNews.length === news.length && news.length > 0}
+                    checked={selectedNews.length === filteredNews.length && filteredNews.length > 0}
                     onChange={() =>
                       setSelectedNews(
-                        selectedNews.length === news.length ? [] : news.map((item) => item.id)
+                        selectedNews.length === filteredNews.length
+                          ? []
+                          : filteredNews.map((item) => item.id)
                       )
                     }
                   />
@@ -153,7 +276,7 @@ function Admin() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {news.map((item) => (
+              {filteredNews.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell padding="checkbox">
                     <Checkbox
@@ -166,23 +289,21 @@ function Admin() {
                   <TableCell>{item.author_email}</TableCell>
                   <TableCell>{item.published ? 'Опубликована' : 'Черновик'}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="outlined"
+                    <IconButton
                       onClick={() => {
                         setEditNews(item);
                         setOpenEditDialog(true);
                       }}
-                      sx={{ mr: 1 }}
+                      sx={{ color: '#007aff' }}
                     >
-                      Редактировать
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
                       onClick={() => handleDeleteNews(item.id)}
+                      sx={{ color: '#ff3b30' }}
                     >
-                      Удалить
-                    </Button>
+                      <DeleteIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -197,19 +318,19 @@ function Admin() {
             <TextField
               label="Заголовок"
               fullWidth
-              margin="normal"
               value={newNews.title}
               onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
             />
-            <TextField
-              label="Содержимое"
-              fullWidth
-              margin="normal"
-              multiline
-              rows={4}
-              value={newNews.content}
-              onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
-            />
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                label="Содержимое"
+                fullWidth
+                multiline
+                rows={4}
+                value={newNews.content}
+                onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
+              />
+            </Box>
             <Checkbox
               checked={newNews.published}
               onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
@@ -233,19 +354,19 @@ function Admin() {
                 <TextField
                   label="Заголовок"
                   fullWidth
-                  margin="normal"
                   value={editNews.title}
                   onChange={(e) => setEditNews({ ...editNews, title: e.target.value })}
                 />
-                <TextField
-                  label="Содержимое"
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={4}
-                  value={editNews.content}
-                  onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
-                />
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    label="Содержимое"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={editNews.content}
+                    onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
+                  />
+                </Box>
                 <Checkbox
                   checked={editNews.published}
                   onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}

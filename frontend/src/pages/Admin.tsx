@@ -58,13 +58,13 @@ function Admin() {
         (a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setNews(sortedNews);
-      console.log('Fetched news:', sortedNews); // Для отладки
+      console.log('Fetched news:', sortedNews.length, sortedNews); // Для отладки
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
   };
 
-  const filteredNews = useMemo(() => {
+  const filteredNewsFull = useMemo(() => {
     let result = news;
 
     // Поиск по заголовку и содержимому
@@ -96,9 +96,13 @@ function Admin() {
       result = result.filter((item) => item.published === isPublished);
     }
 
-    console.log('Filtered news length:', result.length); // Для отладки
-    return showAll ? result : result.slice(0, 5);
-  }, [news, search, startDate, endDate, authorFilter, statusFilter, showAll]);
+    console.log('Filtered news full length:', result.length); // Для отладки
+    return result;
+  }, [news, search, startDate, endDate, authorFilter, statusFilter]);
+
+  const filteredNews = useMemo(() => {
+    return showAll ? filteredNewsFull : filteredNewsFull.slice(0, 5);
+  }, [filteredNewsFull, showAll]);
 
   const authors = useMemo(() => {
     const uniqueAuthors = Array.from(new Set(news.map((item) => item.author_email)));
@@ -207,11 +211,11 @@ function Admin() {
               },
             }}
           />
-          {filteredNews.length > 5 && !showAll && (
+          {filteredNewsFull.length > 5 && !showAll && (
             <Button
               variant="text"
               onClick={() => setShowAll(true)}
-              sx={{ color: '#007aff', textTransform: 'none', ml: 2 }}
+              sx={{ color: '#007aff', textTransform: 'none', ml: 2, fontSize: '0.875rem' }}
             >
               Показать все
             </Button>
@@ -220,7 +224,7 @@ function Admin() {
             <Button
               variant="text"
               onClick={() => setShowAll(false)}
-              sx={{ color: '#007aff', textTransform: 'none', ml: 2 }}
+              sx={{ color: '#007aff', textTransform: 'none', ml: 2, fontSize: '0.875rem' }}
             >
               Скрыть
             </Button>
@@ -246,7 +250,7 @@ function Admin() {
           <TextField
             label="Дата до"
             type="date"
-            value={endDate}
+            value={startDate}
             onChange={(e) => setEndDate(e.target.value)}
             size="small"
             InputLabelProps={{ shrink: true }}

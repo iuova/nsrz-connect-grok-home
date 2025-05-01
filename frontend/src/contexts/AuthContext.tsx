@@ -1,45 +1,60 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User } from '../types';
-              
+
+interface User {
+  id: number;
+  email: string;
+  role: 'employee' | 'admin' | 'news_manager';
+  status: 'active' | 'blocked';
+}
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
-              
+
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => {},
   logout: () => {},
 });
-              
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-              
-  const login = async (email: string, password: string) => {
-    const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-    setUser(res.data.user);
-    localStorage.setItem('token', res.data.token);
-  };
-              
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('token');
-  };
-              
+  const navigate = useNavigate();
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get('http://localhost:5000/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((res) => setUser(res.data));
+      axios
+        .get('http://localhost:5000/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => setUser(res.data))
+        .catch(() => localStorage.removeItem('token'));
     }
   }, []);
-              
+
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data.user);
+      navigate('/');
+    } catch (error) {
+      throw new Error('Ошибка входа');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    navigate('/login');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
   );
 };

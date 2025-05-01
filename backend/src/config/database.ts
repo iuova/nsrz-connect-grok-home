@@ -1,68 +1,34 @@
 import sqlite3 from 'sqlite3';
-import path from 'path';
-              
-const dbPath = path.resolve(__dirname, '../../database.db');
-const db = new sqlite3.Database(dbPath, (err: Error | null) => {
+
+const db = new sqlite3.Database('./database.db', (err) => {
   if (err) {
-    console.error('Error connecting to SQLite:', err);
+    console.error('Error opening database:', err.message);
   } else {
-    console.log('Connected to SQLite database');
+    console.log('Connected to SQLite database.');
+    // Создание таблицы users
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('employee', 'admin', 'news_manager')),
+        status TEXT NOT NULL CHECK(status IN ('active', 'blocked')),
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    // Создание таблицы news
+    db.run(`
+      CREATE TABLE IF NOT EXISTS news (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        author_id INTEGER NOT NULL,
+        published BOOLEAN NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (author_id) REFERENCES users(id)
+      )
+    `);
   }
 });
-              
-// Initialize tables
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE,
-      password TEXT,
-      role TEXT CHECK(role IN ('employee', 'admin', 'news_manager')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS news (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      content TEXT,
-      author_id INTEGER,
-      published BOOLEAN,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS departments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      parent_id INTEGER,
-      FOREIGN KEY (parent_id) REFERENCES departments(id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS employees (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      full_name TEXT,
-      position TEXT,
-      email TEXT UNIQUE,
-      phone TEXT,
-      status TEXT CHECK(status IN ('active', 'vacation')),
-      department_id INTEGER,
-      FOREIGN KEY (department_id) REFERENCES departments(id)
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS vacations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      employee_id INTEGER,
-      total_days INTEGER,
-      used_days INTEGER,
-      start_date DATE,
-      end_date DATE,
-      FOREIGN KEY (employee_id) REFERENCES employees(id)
-    )
-  `);
-});
-              
+
 export default db;

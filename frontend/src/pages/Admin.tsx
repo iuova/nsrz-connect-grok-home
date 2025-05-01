@@ -33,50 +33,65 @@ function Admin() {
     fetchNews();
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const fetchNews = async () => {
-    const res = await axios.get('http://localhost:5000/api/news');
-    setNews(res.data);
+    try {
+      const res = await axios.get('http://localhost:5000/api/news', { headers: getAuthHeaders() });
+      setNews(res.data);
+    } catch (error) {
+      console.error('Ошибка загрузки новостей:', error);
+    }
   };
 
   const handleAddNews = async () => {
     try {
-      await axios.post('http://localhost:5000/api/news', newNews);
+      await axios.post('http://localhost:5000/api/news', newNews, { headers: getAuthHeaders() });
       setNewNews({ title: '', content: '', published: false });
       setOpenAddDialog(false);
       fetchNews();
-    } catch (error) {
-      alert('Ошибка при добавлении новости');
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при добавлении новости');
     }
   };
 
   const handleUpdateNews = async () => {
     if (!editNews) return;
     try {
-      await axios.put(`http://localhost:5000/api/news/${editNews.id}`, editNews);
+      await axios.put(`http://localhost:5000/api/news/${editNews.id}`, editNews, {
+        headers: getAuthHeaders(),
+      });
       setEditNews(null);
       setOpenEditDialog(false);
       fetchNews();
-    } catch (error) {
-      alert('Ошибка при обновлении новости');
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при обновлении новости');
     }
   };
 
   const handleDeleteNews = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/news/${id}`);
+      await axios.delete(`http://localhost:5000/api/news/${id}`, { headers: getAuthHeaders() });
       fetchNews();
-    } catch (error) {
-      alert('Ошибка при удалении новости');
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при удалении новости');
     }
   };
 
   const handlePublishMultiple = async () => {
     try {
-      await axios.post('http://localhost:5000/api/news/publish', { ids: selectedNews });
+      await axios.post(
+        'http://localhost:5000/api/news/publish',
+        { ids: selectedNews },
+        { headers: getAuthHeaders() }
+      );
       setSelectedNews([]);
       fetchNews();
-    } catch (error) {
-      alert('Ошибка при публикации новостей');
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при публикации новостей');
     }
   };
 

@@ -33,9 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setUser(res.data))
-        .catch(() => localStorage.removeItem('token'));
+        .catch(() => {
+          localStorage.removeItem('token');
+          navigate('/login');
+        });
     }
-  }, []);
+  }, [navigate]);
 
   const login = async (email: string, password: string) => {
     try {

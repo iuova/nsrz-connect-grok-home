@@ -1,0 +1,16 @@
+{
+  "name": "nsrz-connect-grok",
+  "version": "1.0.0",
+  "description": "NSRZ Connect web app",
+  "main": "index.js",
+  "repository": "https://github.com/iuova/nsrz-connect-grok.git",
+  "author": "uniov <unina.olga@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon src/index.ts"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

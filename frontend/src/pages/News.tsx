@@ -96,7 +96,7 @@ function News() {
         </Box>
         <Grid container spacing={3}>
           {paginatedNews.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
+            <Grid item={true} xs={12} sm={6} md={4} key={item.id}>
               <Card
                 sx={{
                   height: '100%',

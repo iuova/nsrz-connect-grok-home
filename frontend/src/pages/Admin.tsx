@@ -143,7 +143,7 @@ function Admin() {
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
-    setPage(1); // Сбрасываем на первую страницу при сортировке
+    setPage(1);
   };
 
   const handleAddNews = async () => {
@@ -202,10 +202,12 @@ function Admin() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
+    return date.toLocaleString('ru-RU', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 

@@ -23,9 +23,12 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Pagination,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowUpward from '@mui/icons-material/ArrowUpward';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import { News } from '../types';
 
 function Admin() {
@@ -35,12 +38,18 @@ function Admin() {
   const [selectedNews, setSelectedNews] = useState<number[]>([]);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [showAll, setShowAll] = useState(false);
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [authorFilter, setAuthorFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'title' | 'created_at' | 'author_email' | 'published';
+    direction: 'asc' | 'desc';
+  }>({ key: 'created_at', direction: 'desc' });
+
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchNews();
@@ -54,18 +63,15 @@ function Admin() {
   const fetchNews = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/news', { headers: getAuthHeaders() });
-      const sortedNews = res.data.sort(
-        (a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setNews(sortedNews);
-      console.log('Fetched news:', sortedNews.length, sortedNews.map(n => ({ id: n.id, published: n.published }))); // Для отладки
+      setNews(res.data);
+      console.log('Fetched news:', res.data.length, res.data.map((n: News) => ({ id: n.id, published: n.published })));
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
   };
 
-  const filteredNewsFull = useMemo(() => {
-    let result = news;
+  const sortedAndFilteredNews = useMemo(() => {
+    let result = [...news];
 
     // Поиск по заголовку и содержимому
     if (search) {
@@ -93,23 +99,52 @@ function Admin() {
     // Фильтр по статусу
     if (statusFilter !== 'all') {
       result = result.filter((item) => {
-        const isPublished = !!item.published; // Приводим к булеву
+        const isPublished = !!item.published;
         return statusFilter === 'published' ? isPublished : !isPublished;
       });
     }
 
-    console.log('Filtered news full length:', result.length, 'Status filter:', statusFilter); // Для отладки
-    return result;
-  }, [news, search, startDate, endDate, authorFilter, statusFilter]);
+    // Сортировка
+    result.sort((a, b) => {
+      const direction = sortConfig.direction === 'asc' ? 1 : -1;
+      switch (sortConfig.key) {
+        case 'title':
+          return direction * a.title.localeCompare(b.title);
+        case 'created_at':
+          return direction * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        case 'author_email':
+          return direction * a.author_email.localeCompare(b.author_email);
+        case 'published':
+          return direction * ((a.published ? 1 : 0) - (b.published ? 1 : 0));
+        default:
+          return 0;
+      }
+    });
 
-  const filteredNews = useMemo(() => {
-    return showAll ? filteredNewsFull : filteredNewsFull.slice(0, 5);
-  }, [filteredNewsFull, showAll]);
+    console.log('Sorted and filtered news length:', result.length, 'Status filter:', statusFilter);
+    return result;
+  }, [news, search, startDate, endDate, authorFilter, statusFilter, sortConfig]);
+
+  const paginatedNews = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return sortedAndFilteredNews.slice(start, end);
+  }, [sortedAndFilteredNews, page]);
+
+  const pageCount = Math.ceil(sortedAndFilteredNews.length / itemsPerPage);
 
   const authors = useMemo(() => {
     const uniqueAuthors = Array.from(new Set(news.map((item) => item.author_email)));
     return uniqueAuthors.sort();
   }, [news]);
+
+  const handleSort = (key: 'title' | 'created_at' | 'author_email' | 'published') => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+    setPage(1); // Сбрасываем на первую страницу при сортировке
+  };
 
   const handleAddNews = async () => {
     try {
@@ -213,24 +248,6 @@ function Admin() {
               },
             }}
           />
-          {filteredNewsFull.length > 5 && !showAll && (
-            <Button
-              variant="text"
-              onClick={() => setShowAll(true)}
-              sx={{ color: '#007aff', textTransform: 'none', ml: 2, fontSize: '0.875rem' }}
-            >
-              Показать все
-            </Button>
-          )}
-          {showAll && (
-            <Button
-              variant="text"
-              onClick={() => setShowAll(false)}
-              sx={{ color: '#007aff', textTransform: 'none', ml: 2, fontSize: '0.875rem' }}
-            >
-              Скрыть
-            </Button>
-          )}
         </Box>
         <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
           <TextField
@@ -317,25 +334,53 @@ function Admin() {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedNews.length === filteredNews.length && filteredNews.length > 0}
+                    checked={selectedNews.length === paginatedNews.length && paginatedNews.length > 0}
                     onChange={() =>
                       setSelectedNews(
-                        selectedNews.length === filteredNews.length
+                        selectedNews.length === paginatedNews.length
                           ? []
-                          : filteredNews.map((item) => item.id)
+                          : paginatedNews.map((item) => item.id)
                       )
                     }
                   />
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Заголовок</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Дата</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Автор</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Статус</TableCell>
+                <TableCell
+                  sx={{ fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => handleSort('title')}
+                >
+                  Заголовок
+                  {sortConfig.key === 'title' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell
+                  sx={{ fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => handleSort('created_at')}
+                >
+                  Дата
+                  {sortConfig.key === 'created_at' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell
+                  sx={{ fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => handleSort('author_email')}
+                >
+                  Автор
+                  {sortConfig.key === 'author_email' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell
+                  sx={{ fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => handleSort('published')}
+                >
+                  Статус
+                  {sortConfig.key === 'published' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredNews.map((item) => (
+              {paginatedNews.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell padding="checkbox">
                     <Checkbox
@@ -369,6 +414,27 @@ function Admin() {
             </TableBody>
           </Table>
         </TableContainer>
+        {pageCount > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Pagination
+              count={pageCount}
+              page={page}
+              onChange={(_e, value) => setPage(value)}
+              color="primary"
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  color: '#007aff',
+                  '&.Mui-selected': {
+                    bgcolor: '#007aff',
+                    color: '#fff',
+                    '&:hover': { bgcolor: '#005bb5' },
+                  },
+                  '&:hover': { bgcolor: 'rgba(0, 122, 255, 0.1)' },
+                },
+              }}
+            />
+          </Box>
+        )}
 
         {/* Диалог добавления новости */}
         <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>

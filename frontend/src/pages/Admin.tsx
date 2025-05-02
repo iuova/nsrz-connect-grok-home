@@ -58,7 +58,7 @@ function Admin() {
         (a: News, b: News) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setNews(sortedNews);
-      console.log('Fetched news:', sortedNews.length, sortedNews); // Для отладки
+      console.log('Fetched news:', sortedNews.length, sortedNews.map(n => ({ id: n.id, published: n.published }))); // Для отладки
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
@@ -92,11 +92,13 @@ function Admin() {
 
     // Фильтр по статусу
     if (statusFilter !== 'all') {
-      const isPublished = statusFilter === 'published';
-      result = result.filter((item) => item.published === isPublished);
+      result = result.filter((item) => {
+        const isPublished = !!item.published; // Приводим к булеву
+        return statusFilter === 'published' ? isPublished : !isPublished;
+      });
     }
 
-    console.log('Filtered news full length:', result.length); // Для отладки
+    console.log('Filtered news full length:', result.length, 'Status filter:', statusFilter); // Для отладки
     return result;
   }, [news, search, startDate, endDate, authorFilter, statusFilter]);
 
@@ -250,7 +252,7 @@ function Admin() {
           <TextField
             label="Дата до"
             type="date"
-            value={startDate}
+            value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             size="small"
             InputLabelProps={{ shrink: true }}

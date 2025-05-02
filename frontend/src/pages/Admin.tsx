@@ -24,14 +24,17 @@ import {
   FormControl,
   InputLabel,
   Pagination,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
-import { News } from '../types';
+import { News, User } from '../types';
 
-function Admin() {
+// Компонент для управления новостями
+function NewsManagement() {
   const [news, setNews] = useState<News[]>([]);
   const [newNews, setNewNews] = useState({ title: '', content: '', published: false });
   const [editNews, setEditNews] = useState<News | null>(null);
@@ -64,7 +67,6 @@ function Admin() {
     try {
       const res = await axios.get('http://localhost:5000/api/news', { headers: getAuthHeaders() });
       setNews(res.data);
-      console.log('Fetched news:', res.data.length, res.data.map((n: News) => ({ id: n.id, published: n.published })));
     } catch (error) {
       console.error('Ошибка загрузки новостей:', error);
     }
@@ -72,16 +74,12 @@ function Admin() {
 
   const sortedAndFilteredNews = useMemo(() => {
     let result = [...news];
-
-    // Поиск по заголовку и содержимому
     if (search) {
       const lowerSearch = search.toLowerCase();
       result = result.filter(
         (item) => item.title.toLowerCase().includes(lowerSearch) || item.content.toLowerCase().includes(lowerSearch)
       );
     }
-
-    // Фильтр по дате
     if (startDate) {
       const start = new Date(startDate);
       result = result.filter((item) => new Date(item.created_at) >= start);
@@ -90,21 +88,15 @@ function Admin() {
       const end = new Date(endDate);
       result = result.filter((item) => new Date(item.created_at) <= end);
     }
-
-    // Фильтр по автору
     if (authorFilter) {
       result = result.filter((item) => item.author_email === authorFilter);
     }
-
-    // Фильтр по статусу
     if (statusFilter !== 'all') {
       result = result.filter((item) => {
         const isPublished = !!item.published;
         return statusFilter === 'published' ? isPublished : !isPublished;
       });
     }
-
-    // Сортировка
     result.sort((a, b) => {
       const direction = sortConfig.direction === 'asc' ? 1 : -1;
       switch (sortConfig.key) {
@@ -120,8 +112,6 @@ function Admin() {
           return 0;
       }
     });
-
-    console.log('Sorted and filtered news length:', result.length, 'Status filter:', statusFilter);
     return result;
   }, [news, search, startDate, endDate, authorFilter, statusFilter, sortConfig]);
 
@@ -212,353 +202,416 @@ function Admin() {
   };
 
   return (
+    <Box>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+        <Button
+          variant="contained"
+          onClick={() => setOpenAddDialog(true)}
+          sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+        >
+          Добавить новость
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handlePublishMultiple}
+          disabled={selectedNews.length === 0}
+          sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+        >
+          Опубликовать выбранные
+        </Button>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <TextField
+          placeholder="Поиск по новостям"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+          sx={{
+            flexGrow: 1,
+            maxWidth: '100%',
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              '&:hover fieldset': { borderColor: '#007aff' },
+              '&.Mui-focused fieldset': { borderColor: '#007aff' },
+            },
+          }}
+        />
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+        <TextField
+          label="Дата от"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          sx={{
+            width: 150,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              '&:hover fieldset': { borderColor: '#007aff' },
+              '&.Mui-focused fieldset': { borderColor: '#007aff' },
+            },
+          }}
+        />
+        <TextField
+          label="Дата до"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          sx={{
+            width: 150,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              '&:hover fieldset': { borderColor: '#007aff' },
+              '&.Mui-focused fieldset': { borderColor: '#007aff' },
+            },
+          }}
+        />
+        <FormControl sx={{ width: 150 }}>
+          <InputLabel sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}>
+            Автор
+          </InputLabel>
+          <Select
+            value={authorFilter}
+            onChange={(e) => setAuthorFilter(e.target.value)}
+            size="small"
+            sx={{
+              borderRadius: 2,
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+            }}
+          >
+            <MenuItem value="">Все</MenuItem>
+            {authors.map((author) => (
+              <MenuItem key={author} value={author}>
+                {author}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ width: 150 }}>
+          <InputLabel sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}>
+            Статус
+          </InputLabel>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            size="small"
+            sx={{
+              borderRadius: 2,
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+            }}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="published">Опубликована</MenuItem>
+            <MenuItem value="draft">Черновик</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedNews.length === paginatedNews.length && paginatedNews.length > 0}
+                  onChange={() =>
+                    setSelectedNews(
+                      selectedNews.length === paginatedNews.length
+                        ? []
+                        : paginatedNews.map((item) => item.id)
+                    )
+                  }
+                />
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleSort('title')}>
+                Заголовок
+                {sortConfig.key === 'title' &&
+                  (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleSort('created_at')}>
+                Дата
+                {sortConfig.key === 'created_at' &&
+                  (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleSort('author_email')}>
+                Автор
+                {sortConfig.key === 'author_email' &&
+                  (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleSort('published')}>
+                Статус
+                {sortConfig.key === 'published' &&
+                  (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedNews.map((item) => (
+              <TableRow key={item.id} hover>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedNews.includes(item.id)}
+                    onChange={() => handleSelectNews(item.id)}
+                  />
+                </TableCell>
+                <TableCell>{item.title}</TableCell>
+                <TableCell>{formatDate(item.created_at)}</TableCell>
+                <TableCell>{item.author_email}</TableCell>
+                <TableCell>{item.published ? 'Опубликована' : 'Черновик'}</TableCell>
+                <TableCell>
+                  <IconButton
+                    onClick={() => {
+                      setEditNews(item);
+                      setOpenEditDialog(true);
+                    }}
+                    sx={{ color: '#007aff' }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton onClick={() => handleDeleteNews(item.id)} sx={{ color: '#ff3b30' }}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {pageCount > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_e, value) => setPage(value)}
+            color="primary"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: '#007aff',
+                '&.Mui-selected': {
+                  bgcolor: '#007aff',
+                  color: '#fff',
+                  '&:hover': { bgcolor: '#005bb5' },
+                },
+                '&:hover': { bgcolor: 'rgba(0, 122, 255, 0.1)' },
+              },
+            }}
+          />
+        </Box>
+      )}
+      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
+        <DialogTitle>Добавить новость</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Заголовок"
+            fullWidth
+            value={newNews.title}
+            onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+          <TextField
+            label="Содержимое"
+            fullWidth
+            multiline
+            rows={4}
+            value={newNews.content}
+            onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+            <Checkbox
+              checked={newNews.published}
+              onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
+            />
+            <Typography variant="body2">Опубликовать сразу</Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOpenAddDialog(false)}
+            sx={{ color: '#007aff', textTransform: 'none' }}
+          >
+            Отмена
+          </Button>
+          <Button
+            onClick={handleAddNews}
+            variant="contained"
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Добавить
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
+        <DialogTitle>Редактировать новость</DialogTitle>
+        <DialogContent>
+          {editNews && (
+            <>
+              <TextField
+                label="Заголовок"
+                fullWidth
+                value={editNews.title}
+                onChange={(e) => setEditNews({ ...editNews, title: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <TextField
+                label="Содержимое"
+                fullWidth
+                multiline
+                rows={4}
+                value={editNews.content}
+                onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                <Checkbox
+                  checked={editNews.published}
+                  onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}
+                />
+                <Typography variant="body2">Опубликовать</Typography>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOpenEditDialog(false)}
+            sx={{ color: '#007aff', textTransform: 'none' }}
+          >
+            Отмена
+          </Button>
+          <Button
+            onClick={handleUpdateNews}
+            variant="contained"
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+// Компонент для управления пользователями
+function UserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/users', { headers: getAuthHeaders() });
+      setUsers(res.data);
+    } catch (error) {
+      console.error('Ошибка загрузки пользователей:', error);
+    }
+  };
+
+  return (
+    <Box>
+      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id} hover>
+                <TableCell>{user.id}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+}
+
+// Главный компонент Admin
+function Admin() {
+  const [tabValue, setTabValue] = useState(0);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-          Управление новостями
+          Администрирование
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-          <Button
-            variant="contained"
-            onClick={() => setOpenAddDialog(true)}
-            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
-          >
-            Добавить новость
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handlePublishMultiple}
-            disabled={selectedNews.length === 0}
-            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
-          >
-            Опубликовать выбранные
-          </Button>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <TextField
-            placeholder="Поиск по новостям"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            size="small"
-            sx={{
-              flexGrow: 1,
-              maxWidth: '100%',
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '&:hover fieldset': { borderColor: '#007aff' },
-                '&.Mui-focused fieldset': { borderColor: '#007aff' },
-              },
-            }}
-          />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
-          <TextField
-            label="Дата от"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: 150,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '&:hover fieldset': { borderColor: '#007aff' },
-                '&.Mui-focused fieldset': { borderColor: '#007aff' },
-              },
-            }}
-          />
-          <TextField
-            label="Дата до"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{
-              width: 150,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '&:hover fieldset': { borderColor: '#007aff' },
-                '&.Mui-focused fieldset': { borderColor: '#007aff' },
-              },
-            }}
-          />
-          <FormControl sx={{ width: 150 }}>
-            <InputLabel
-              sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}
-            >
-              Автор
-            </InputLabel>
-            <Select
-              value={authorFilter}
-              onChange={(e) => setAuthorFilter(e.target.value)}
-              size="small"
-              sx={{
-                borderRadius: 2,
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-              }}
-            >
-              <MenuItem value="">Все</MenuItem>
-              {authors.map((author) => (
-                <MenuItem key={author} value={author}>
-                  {author}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ width: 150 }}>
-            <InputLabel
-              sx={{ top: -2, '&.Mui-focused': { color: '#007aff' }, fontSize: '0.875rem' }}
-            >
-              Статус
-            </InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              size="small"
-              sx={{
-                borderRadius: 2,
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
-              }}
-            >
-              <MenuItem value="all">Все</MenuItem>
-              <MenuItem value="published">Опубликована</MenuItem>
-              <MenuItem value="draft">Черновик</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedNews.length === paginatedNews.length && paginatedNews.length > 0}
-                    onChange={() =>
-                      setSelectedNews(
-                        selectedNews.length === paginatedNews.length
-                          ? []
-                          : paginatedNews.map((item) => item.id)
-                      )
-                    }
-                  />
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: 600, cursor: 'pointer' }}
-                  onClick={() => handleSort('title')}
-                >
-                  Заголовок
-                  {sortConfig.key === 'title' &&
-                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: 600, cursor: 'pointer' }}
-                  onClick={() => handleSort('created_at')}
-                >
-                  Дата
-                  {sortConfig.key === 'created_at' &&
-                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: 600, cursor: 'pointer' }}
-                  onClick={() => handleSort('author_email')}
-                >
-                  Автор
-                  {sortConfig.key === 'author_email' &&
-                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
-                </TableCell>
-                <TableCell
-                  sx={{ fontWeight: 600, cursor: 'pointer' }}
-                  onClick={() => handleSort('published')}
-                >
-                  Статус
-                  {sortConfig.key === 'published' &&
-                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedNews.map((item) => (
-                <TableRow key={item.id} hover>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedNews.includes(item.id)}
-                      onChange={() => handleSelectNews(item.id)}
-                    />
-                  </TableCell>
-                  <TableCell>{item.title}</TableCell>
-                  <TableCell>{formatDate(item.created_at)}</TableCell>
-                  <TableCell>{item.author_email}</TableCell>
-                  <TableCell>{item.published ? 'Опубликована' : 'Черновик'}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => {
-                        setEditNews(item);
-                        setOpenEditDialog(true);
-                      }}
-                      sx={{ color: '#007aff' }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => handleDeleteNews(item.id)}
-                      sx={{ color: '#ff3b30' }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {pageCount > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Pagination
-              count={pageCount}
-              page={page}
-              onChange={(_e, value) => setPage(value)}
-              color="primary"
-              sx={{
-                '& .MuiPaginationItem-root': {
-                  color: '#007aff',
-                  '&.Mui-selected': {
-                    bgcolor: '#007aff',
-                    color: '#fff',
-                    '&:hover': { bgcolor: '#005bb5' },
-                  },
-                  '&:hover': { bgcolor: 'rgba(0, 122, 255, 0.1)' },
-                },
-              }}
-            />
-          </Box>
-        )}
-
-        {/* Диалог добавления новости */}
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
-          <DialogTitle>Добавить новость</DialogTitle>
-          <DialogContent>
-            <TextField
-              label="Заголовок"
-              fullWidth
-              value={newNews.title}
-              onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
-              sx={{
-                mt: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover fieldset': { borderColor: '#007aff' },
-                  '&.Mui-focused fieldset': { borderColor: '#007aff' },
-                },
-              }}
-            />
-            <TextField
-              label="Содержимое"
-              fullWidth
-              multiline
-              rows={4}
-              value={newNews.content}
-              onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
-              sx={{
-                mt: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover fieldset': { borderColor: '#007aff' },
-                  '&.Mui-focused fieldset': { borderColor: '#007aff' },
-                },
-              }}
-            />
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-              <Checkbox
-                checked={newNews.published}
-                onChange={(e) => setNewNews({ ...newNews, published: e.target.checked })}
-              />
-              <Typography variant="body2">Опубликовать сразу</Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => setOpenAddDialog(false)}
-              sx={{ color: '#007aff', textTransform: 'none' }}
-            >
-              Отмена
-            </Button>
-            <Button
-              onClick={handleAddNews}
-              variant="contained"
-              sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
-            >
-              Добавить
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Диалог редактирования новости */}
-        <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
-          <DialogTitle>Редактировать новость</DialogTitle>
-          <DialogContent>
-            {editNews && (
-              <>
-                <TextField
-                  label="Заголовок"
-                  fullWidth
-                  value={editNews.title}
-                  onChange={(e) => setEditNews({ ...editNews, title: e.target.value })}
-                  sx={{
-                    mt: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover fieldset': { borderColor: '#007aff' },
-                      '&.Mui-focused fieldset': { borderColor: '#007aff' },
-                    },
-                  }}
-                />
-                <TextField
-                  label="Содержимое"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={editNews.content}
-                  onChange={(e) => setEditNews({ ...editNews, content: e.target.value })}
-                  sx={{
-                    mt: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover fieldset': { borderColor: '#007aff' },
-                      '&.Mui-focused fieldset': { borderColor: '#007aff' },
-                    },
-                  }}
-                />
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                  <Checkbox
-                    checked={editNews.published}
-                    onChange={(e) => setEditNews({ ...editNews, published: e.target.checked })}
-                  />
-                  <Typography variant="body2">Опубликовать</Typography>
-                </Box>
-              </>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => setOpenEditDialog(false)}
-              sx={{ color: '#007aff', textTransform: 'none' }}
-            >
-              Отмена
-            </Button>
-            <Button
-              onClick={handleUpdateNews}
-              variant="contained"
-              sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
-            >
-              Сохранить
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            mb: 3,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              color: '#007aff',
+              '&:hover': { bgcolor: 'rgba(0, 122, 255, 0.1)' },
+            },
+            '& .Mui-selected': {
+              color: '#007aff',
+              fontWeight: 600,
+            },
+            '& .MuiTabs-indicator': {
+              bgcolor: '#007aff',
+            },
+          }}
+        >
+          <Tab label="Управление новостями" />
+          <Tab label="Управление пользователями" />
+        </Tabs>
+        {tabValue === 0 && <NewsManagement />}
+        {tabValue === 1 && <UserManagement />}
       </Box>
     </Container>
   );

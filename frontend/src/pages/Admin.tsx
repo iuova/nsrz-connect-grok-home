@@ -529,6 +529,10 @@ function NewsManagement() {
 // Компонент для управления пользователями
 function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'user' });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -555,8 +559,55 @@ function UserManagement() {
     }
   };
 
+  const handleAddUser = async () => {
+    try {
+      await axios.post('http://localhost:5000/api/users', newUser, { headers: getAuthHeaders() });
+      setNewUser({ email: '', password: '', role: 'user' });
+      setOpenAddDialog(false);
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при добавлении пользователя');
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editUser) return;
+    try {
+      const updateData: any = { email: editUser.email, role: editUser.role };
+      if (editUser.password) {
+        updateData.password = editUser.password;
+      }
+      await axios.put(`http://localhost:5000/api/users/${editUser.id}`, updateData, {
+        headers: getAuthHeaders(),
+      });
+      setEditUser(null);
+      setOpenEditDialog(false);
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при обновлении пользователя');
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/users/${id}`, { headers: getAuthHeaders() });
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Ошибка при удалении пользователя');
+    }
+  };
+
   return (
     <Box>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+        <Button
+          variant="contained"
+          onClick={() => setOpenAddDialog(true)}
+          sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+        >
+          Добавить пользователя
+        </Button>
+      </Box>
       {loading ? (
         <Typography variant="body1" sx={{ mt: 2 }}>
           Загрузка пользователей...
@@ -577,6 +628,7 @@ function UserManagement() {
                 <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -585,12 +637,154 @@ function UserManagement() {
                   <TableCell>{user.id}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.role}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      onClick={() => {
+                        setEditUser({ ...user, password: '' });
+                        setOpenEditDialog(true);
+                      }}
+                      sx={{ color: '#007aff' }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton onClick={() => handleDeleteUser(user.id)} sx={{ color: '#ff3b30' }}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       )}
+      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
+        <DialogTitle>Добавить пользователя</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Email"
+            fullWidth
+            value={newUser.email}
+            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+          <TextField
+            label="Пароль"
+            type="password"
+            fullWidth
+            value={newUser.password}
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Роль</InputLabel>
+            <Select
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              sx={{
+                borderRadius: 2,
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
+              }}
+            >
+              <MenuItem value="user">Пользователь</MenuItem>
+              <MenuItem value="admin">Администратор</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOpenAddDialog(false)}
+            sx={{ color: '#007aff', textTransform: 'none' }}
+          >
+            Отмена
+          </Button>
+          <Button
+            onClick={handleAddUser}
+            variant="contained"
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Добавить
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
+        <DialogTitle>Редактировать пользователя</DialogTitle>
+        <DialogContent>
+          {editUser && (
+            <>
+              <TextField
+                label="Email"
+                fullWidth
+                value={editUser.email}
+                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <TextField
+                label="Новый пароль (оставьте пустым, чтобы не менять)"
+                type="password"
+                fullWidth
+                value={editUser.password || ''}
+                onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Роль</InputLabel>
+                <Select
+                  value={editUser.role}
+                  onChange={(e) => setEditUser({ ...editUser, role: e.target.value as "employee" | "admin" | "news_manager" })}
+                >
+                  <MenuItem value="employee">Employee</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="news_manager">News Manager</MenuItem>
+                </Select>
+              </FormControl>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOpenEditDialog(false)}
+            sx={{ color: '#007aff', textTransform: 'none' }}
+          >
+            Отмена
+          </Button>
+          <Button
+            onClick={handleUpdateUser}
+            variant="contained"
+            sx={{ bgcolor: '#007aff', '&:hover': { bgcolor: '#005bb5' }, borderRadius: 2 }}
+          >
+            Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

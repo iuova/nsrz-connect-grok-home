@@ -4,6 +4,7 @@ export interface User {
   role: 'employee' | 'admin' | 'news_manager';
   status: 'active' | 'blocked';
   created_at?: string;
+  password?: string;
 }
 
 export interface News {

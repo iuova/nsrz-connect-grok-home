@@ -529,6 +529,8 @@ function NewsManagement() {
 // Компонент для управления пользователями
 function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -541,35 +543,54 @@ function UserManagement() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const res = await axios.get('http://localhost:5000/api/users', { headers: getAuthHeaders() });
       setUsers(res.data);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error('Ошибка загрузки пользователей:', error);
+      setError(error.response?.data?.error || 'Не удалось загрузить пользователей');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Box>
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id} hover>
-                <TableCell>{user.id}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
+      {loading ? (
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Загрузка пользователей...
+        </Typography>
+      ) : error ? (
+        <Typography variant="body1" color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      ) : users.length === 0 ? (
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Нет зарегистрированных пользователей
+        </Typography>
+      ) : (
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id} hover>
+                  <TableCell>{user.id}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 }

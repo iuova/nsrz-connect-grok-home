@@ -31,4 +31,8 @@ const db = new sqlite3.Database('./database.db', (err) => {
   }
 });
 
+export function getDb(): sqlite3.Database {
+  return new sqlite3.Database('/Users/mac/Projects/nsrz-connect-grok/backend/database.db');
+}
+
 export default db;

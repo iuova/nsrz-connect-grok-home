@@ -33,6 +33,13 @@ import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import { News, User } from '../types';
 
+// Утилита для перевода кодов ролей в человекочитаемый вид
+const roleToRu: Record<User['role'], string> = {
+  admin: 'Администратор',
+  employee: 'Сотрудник',
+  news_manager: 'Менеджер новостей',
+};
+
 // Компонент для управления новостями
 function NewsManagement() {
   const [news, setNews] = useState<News[]>([]);
@@ -640,7 +647,7 @@ function UserManagement() {
                   <TableCell>{user.lastname}</TableCell>
                   <TableCell>{user.firstname}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{roleToRu[user.role]}</TableCell>
                   <TableCell>
                     <IconButton
                       onClick={() => {

@@ -13,7 +13,7 @@ router.get('/', authenticate, (req, res) => {
   if (user.role !== 'admin') {
     return res.status(403).json({ error: 'Доступ запрещён' });
   }
-  db.all('SELECT id, email, role FROM users', [], (err, rows) => {
+  db.all('SELECT id, email, lastname, firstname, midlename, role, status, created_at FROM users', [], (err, rows) => {
     if (err) {
       console.error('Ошибка при получении пользователей:', err);
       return res.status(500).json({ error: 'Ошибка сервера' });

@@ -529,7 +529,7 @@ function NewsManagement() {
 // Компонент для управления пользователями
 function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
-  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'user' });
+  const [newUser, setNewUser] = useState({ email: '', lastname: '', firstname: '', midlename: '', password: '', role: 'user' });
   const [editUser, setEditUser] = useState<User | null>(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -562,7 +562,7 @@ function UserManagement() {
   const handleAddUser = async () => {
     try {
       await axios.post('http://localhost:5000/api/users', newUser, { headers: getAuthHeaders() });
-      setNewUser({ email: '', password: '', role: 'user' });
+      setNewUser({ email: '', lastname: '', firstname: '', midlename: '', password: '', role: 'employee' });
       setOpenAddDialog(false);
       fetchUsers();
     } catch (error: any) {
@@ -573,7 +573,7 @@ function UserManagement() {
   const handleUpdateUser = async () => {
     if (!editUser) return;
     try {
-      const updateData: any = { email: editUser.email, role: editUser.role };
+      const updateData: any = { email: editUser.email, lastname: editUser.lastname, firstname: editUser.firstname, midlename: editUser.midlename, role: editUser.role };
       if (editUser.password) {
         updateData.password = editUser.password;
       }
@@ -626,6 +626,8 @@ function UserManagement() {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Фамилия</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Имя</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
@@ -635,6 +637,8 @@ function UserManagement() {
               {users.map((user) => (
                 <TableRow key={user.id} hover>
                   <TableCell>{user.id}</TableCell>
+                  <TableCell>{user.lastname}</TableCell>
+                  <TableCell>{user.firstname}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
@@ -658,12 +662,54 @@ function UserManagement() {
         </TableContainer>
       )}
       <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
-        <DialogTitle>Добавить пользователя</DialogTitle>
+        <DialogTitle>Добавление пользователя</DialogTitle>
         <DialogContent>
+        <TextField
+            label="Фамилия"
+            fullWidth
+            value={newUser.lastname}
+            onChange={(e) => setNewUser({ ...newUser, lastname: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+        <TextField
+            label="Имя"
+            fullWidth
+            value={newUser.firstname}
+            onChange={(e) => setNewUser({ ...newUser, firstname: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
+          <TextField
+            label="Отчество"
+            fullWidth
+            value={newUser.midlename}
+            onChange={(e) => setNewUser({ ...newUser, midlename: e.target.value })}
+            sx={{
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': { borderColor: '#007aff' },
+                '&.Mui-focused fieldset': { borderColor: '#007aff' },
+              },
+            }}
+          />
           <TextField
             label="Email"
             fullWidth
-            value={newUser.email}
+            value={newUser.email || ""}
             onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
             sx={{
               mt: 2,
@@ -678,7 +724,7 @@ function UserManagement() {
             label="Пароль"
             type="password"
             fullWidth
-            value={newUser.password}
+            value={newUser.password || ""}
             onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
             sx={{
               mt: 2,
@@ -690,7 +736,6 @@ function UserManagement() {
             }}
           />
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel sx={{ '&.Mui-focused': { color: '#007aff' } }}>Роль</InputLabel>
             <Select
               value={newUser.role}
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
@@ -700,8 +745,9 @@ function UserManagement() {
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#007aff' },
               }}
             >
-              <MenuItem value="user">Пользователь</MenuItem>
+              <MenuItem value="employee">Сотрудник</MenuItem>
               <MenuItem value="admin">Администратор</MenuItem>
+              <MenuItem value="news_manager">Менеджер новостей</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
@@ -726,6 +772,48 @@ function UserManagement() {
         <DialogContent>
           {editUser && (
             <>
+              <TextField
+                label="Фамилия"
+                fullWidth
+                value={editUser.lastname}
+                onChange={(e) => setEditUser({ ...editUser, lastname: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <TextField
+                label="Имя"
+                fullWidth
+                value={editUser.firstname}
+                onChange={(e) => setEditUser({ ...editUser, firstname: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />
+              <TextField
+                label="Отчество"
+                fullWidth
+                value={editUser.midlename}
+                onChange={(e) => setEditUser({ ...editUser, midlename: e.target.value })}
+                sx={{
+                  mt: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#007aff' },
+                    '&.Mui-focused fieldset': { borderColor: '#007aff' },
+                  },
+                }}
+              />               
               <TextField
                 label="Email"
                 fullWidth
@@ -761,9 +849,9 @@ function UserManagement() {
                   value={editUser.role}
                   onChange={(e) => setEditUser({ ...editUser, role: e.target.value as "employee" | "admin" | "news_manager" })}
                 >
-                  <MenuItem value="employee">Employee</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="news_manager">News Manager</MenuItem>
+                  <MenuItem value="employee">Сотрудник</MenuItem>
+                  <MenuItem value="admin">Администратор</MenuItem>
+                  <MenuItem value="news_manager">Менеджер новостей</MenuItem>
                 </Select>
               </FormControl>
             </>

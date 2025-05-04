@@ -2,7 +2,8 @@
   "name": "nsrz-connect-backend",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts"
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "migrate": "ts-node migrate.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

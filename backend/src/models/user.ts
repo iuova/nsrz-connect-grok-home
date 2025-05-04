@@ -2,6 +2,9 @@ import db from '../config/database';
 
 export interface User {
   id: number;
+  firstname: string,
+  lastname: string,
+  midlename: string,
   email: string;
   password: string;
   role: 'employee' | 'admin' | 'news_manager';

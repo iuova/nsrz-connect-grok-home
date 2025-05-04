@@ -9,7 +9,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "backend": "cd backend && yarn dev"
+    "backend": "cd backend && yarn dev",
+    "migrate:prod": "NODE_ENV=production ts-node migrate.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -20,6 +21,8 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "docx": "^9.4.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "xlsx": "^0.18.5"
   }
 }

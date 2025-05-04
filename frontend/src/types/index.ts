@@ -1,6 +1,9 @@
 export interface User {
   id: number;
   email: string;
+  firstname: string,
+  lastname: string,
+  midlename: string,
   role: 'employee' | 'admin' | 'news_manager';
   status: 'active' | 'blocked';
   created_at?: string;

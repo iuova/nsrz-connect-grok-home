@@ -28,15 +28,15 @@ router.post('/', authenticate, async (req, res) => {
     if (user.role !== 'admin') {
       return res.status(403).json({ error: 'Доступ запрещён' });
     }
-    const { email, password, role } = req.body;
-    if (!email || !password || !role) {
-      return res.status(400).json({ error: 'Email, пароль и роль обязательны' });
+    const { email, lastname, firstname, midlename, password, role } = req.body;
+    if (!email || !lastname || !firstname || !password || !role) {
+      return res.status(400).json({ error: 'Email, фамилия, имя, пароль и роль обязательны' });
     }
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       db.run(
-        'INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
-        [email, hashedPassword, role],
+        'INSERT INTO users (email, lastname, firstname, midlename, password, role) VALUES (?, ?, ?, ?, ?, ?)',
+        [email, lastname, firstname, midlename || null, hashedPassword, role],
         function (err) {
           if (err) {
             console.error('Ошибка при добавлении пользователя:', err);
@@ -58,13 +58,13 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Доступ запрещён' });
     }
     const { id } = req.params;
-    const { email, password, role } = req.body;
-    if (!email || !role) {
-      return res.status(400).json({ error: 'Email и роль обязательны' });
+    const { email, lastname, firstname, midlename, password, role } = req.body;
+    if (!email || !lastname || !firstname || !role) {
+      return res.status(400).json({ error: 'Email, фамилия, имя и роль обязательны' });
     }
     try {
-      let query = 'UPDATE users SET email = ?, role = ?';
-      const params = [email, role];
+      let query = 'UPDATE users SET email = ?, lastname = ?, firstname = ?, midlename = ?, role = ?';
+      const params = [email, lastname, firstname, midlename || null, role];
       if (password) {
         const hashedPassword = await bcrypt.hash(password, 10);
         query += ', password = ?';

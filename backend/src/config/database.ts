@@ -10,6 +10,9 @@ const db = new sqlite3.Database('./database.db', (err) => {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
+        lastname TEXT,
+        firstname TEXT,
+        midlename TEXT,
         password TEXT NOT NULL,
         role TEXT NOT NULL CHECK(role IN ('employee', 'admin', 'news_manager')),
         status TEXT NOT NULL CHECK(status IN ('active', 'blocked')),

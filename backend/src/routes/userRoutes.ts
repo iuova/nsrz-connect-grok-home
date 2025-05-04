@@ -9,11 +9,20 @@ const db: Database = getDb();
 
 // Получение всех пользователей (только для админа)
 router.get('/', authenticate, (req, res) => {
-  const user = (req as any).user;
-  if (user.role !== 'admin') {
+  if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Доступ запрещён' });
   }
-  db.all('SELECT id, email, lastname, firstname, midlename, role, status, created_at FROM users', [], (err, rows) => {
+
+  const { search = '' } = req.query;
+  let query = 'SELECT id, email, lastname, firstname, midlename, role, status, created_at FROM users';
+  const params = [];
+
+  if (search) {
+    query += ' WHERE lastname LIKE ? OR firstname LIKE ? OR email LIKE ?';
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  db.all(query, params, (err, rows) => {
     if (err) {
       console.error('Ошибка при получении пользователей:', err);
       return res.status(500).json({ error: 'Ошибка сервера' });

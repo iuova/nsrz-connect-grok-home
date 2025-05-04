@@ -542,10 +542,11 @@ function UserManagement() {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [search]);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -555,12 +556,19 @@ function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/users', { headers: getAuthHeaders() });
-      setUsers(res.data);
+      const response = await axios.get('http://localhost:5000/api/users', { 
+        params: { search },
+        headers: getAuthHeaders()
+      });
+      setUsers(response.data);
       setError(null);
     } catch (error: any) {
-      console.error('Ошибка загрузки пользователей:', error);
-      setError(error.response?.data?.error || 'Не удалось загрузить пользователей');
+      console.error('Ошибка при загрузке пользователей:', error);
+      setError(
+        error.response?.data?.error || 
+        error.message || 
+        'Не удалось подключиться к серверу'
+      );
     } finally {
       setLoading(false);
     }
@@ -606,6 +614,13 @@ function UserManagement() {
 
   return (
     <Box>
+      <TextField
+        label="Поиск пользователей"
+        variant="outlined"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 2, width: '100%' }}
+      />
       <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
         <Button
           variant="contained"

@@ -543,6 +543,10 @@ function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'lastname' | 'firstname' | 'email' | 'role';
+    direction: 'asc' | 'desc';
+  }>({ key: 'lastname', direction: 'asc' });
 
   useEffect(() => {
     fetchUsers();
@@ -572,6 +576,33 @@ function UserManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sortedUsers = useMemo(() => {
+    const result = [...users];
+    result.sort((a, b) => {
+      const direction = sortConfig.direction === 'asc' ? 1 : -1;
+      switch (sortConfig.key) {
+        case 'lastname':
+          return direction * (a.lastname || '').localeCompare(b.lastname || '');
+        case 'firstname':
+          return direction * (a.firstname || '').localeCompare(b.firstname || '');
+        case 'email':
+          return direction * a.email.localeCompare(b.email);
+        case 'role':
+          return direction * a.role.localeCompare(b.role);
+        default:
+          return 0;
+      }
+    });
+    return result;
+  }, [users, sortConfig]);
+
+  const handleSort = (key: 'lastname' | 'firstname' | 'email' | 'role') => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
   };
 
   const handleAddUser = async () => {
@@ -648,15 +679,43 @@ function UserManagement() {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Фамилия</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Имя</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Роль</TableCell>
+                <TableCell 
+                  sx={{ fontWeight: 600, cursor: 'pointer' }} 
+                  onClick={() => handleSort('lastname')}
+                >
+                  Фамилия
+                  {sortConfig.key === 'lastname' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell 
+                  sx={{ fontWeight: 600, cursor: 'pointer' }} 
+                  onClick={() => handleSort('firstname')}
+                >
+                  Имя
+                  {sortConfig.key === 'firstname' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell 
+                  sx={{ fontWeight: 600, cursor: 'pointer' }} 
+                  onClick={() => handleSort('email')}
+                >
+                  Email
+                  {sortConfig.key === 'email' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
+                <TableCell 
+                  sx={{ fontWeight: 600, cursor: 'pointer' }} 
+                  onClick={() => handleSort('role')}
+                >
+                  Роль
+                  {sortConfig.key === 'role' &&
+                    (sortConfig.direction === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user) => (
+              {sortedUsers.map((user) => (
                 <TableRow key={user.id} hover>
                   <TableCell>{user.id}</TableCell>
                   <TableCell>{user.lastname}</TableCell>
@@ -835,7 +894,7 @@ function UserManagement() {
                     '&.Mui-focused fieldset': { borderColor: '#007aff' },
                   },
                 }}
-              />               
+              />
               <TextField
                 label="Email"
                 fullWidth
